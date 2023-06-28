@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Vector3 } from 'three';
-
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.z = 5;
@@ -8,30 +8,24 @@ camera.position.z = 5;
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
-
+let objectA, objectB;
 document.addEventListener('click', () => {
   
 
-	const cubeSize = 1;
-	const geometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
-	const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
 	
-
-
-  const verticesA = geometry.attributes.position.array.map((_, index) => {
-    const vertex = new Vector3();
-    vertex.fromArray(geometry.attributes.position.array, index * 3);
-    return vertex;
-  });
-  
-  const verticesB = geometry.attributes.position.array.map((_, index) => {
-    const vertex = new Vector3();
-    vertex.fromArray(geometry.attributes.position.array, index * 3);
-    return vertex;
-  });
-
-  
-  
+  const loader = new GLTFLoader();
+  loader.load(
+	'scene.gltf',
+	function (gltf) {
+	  const objectA = gltf.scene.clone();
+	  scene.add(objectA);
+	});
+	loader.load(
+		'scene.gltf',
+		function (gltf) {
+		  const objectB = gltf.scene.clone();
+		  scene.add(objectB);
+		});
   // Collider
   class Collider {
     FindFurthestPoint(direction) {}
@@ -57,17 +51,6 @@ document.addEventListener('click', () => {
 
       return maxPoint;
     }
-  }
-  const colliderA = new MeshCollider(verticesA);
-  const colliderB = new MeshCollider(verticesB);
-
-
-  colliderA.position.x = 0;
-  colliderB.position.x = 1;
-  scene.add(colliderA);
-  scene.add(colliderB);
-  function Support(colliderA, colliderB, direction) {
-    return colliderA.FindFurthestPoint(direction).sub(colliderB.FindFurthestPoint(direction.negate()));
   }
 
   // Simplex
@@ -100,6 +83,11 @@ document.addEventListener('click', () => {
       }
       this.m_size = args.length;
     }
+  }
+  function Support(colliderA, colliderB, direction) {
+    const pointA = colliderA.FindFurthestPoint(direction.clone());
+    const pointB = colliderB.FindFurthestPoint(direction.clone().negate());
+    return pointA.sub(pointB);
   }
 
   function GJK(colliderA, colliderB) {
@@ -226,7 +214,7 @@ document.addEventListener('click', () => {
   const beepAudio = new Audio();
   beepAudio.src = 'beep.wav';
   beepAudio.addEventListener('canplaythrough', () => {
-    if (GJK(colliderA, colliderB)) {
+    if (GJK(objectA, objectB)) {
       beepAudio.play();
       material.color.set(0xff0000);
     } else {
